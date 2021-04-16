@@ -4,7 +4,7 @@ import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
+import traceback
 from model import GGNN
 from utils.train import train
 from utils.test import test
@@ -39,34 +39,36 @@ if opt.cuda:
     torch.cuda.manual_seed_all(opt.manualSeed)
 
 def main(opt):
-    train_dataset = bAbIDataset(opt.dataroot, opt.question_id, True)
-    train_dataloader = bAbIDataloader(train_dataset, batch_size=opt.batchSize, \
-                                      shuffle=True, num_workers=2)
+    try:
+        train_dataset = bAbIDataset(opt.dataroot, opt.question_id, True)
+        train_dataloader = bAbIDataloader(train_dataset, batch_size=opt.batchSize, \
+                                          shuffle=True, num_workers=2)
 
-    test_dataset = bAbIDataset(opt.dataroot, opt.question_id, False)
-    test_dataloader = bAbIDataloader(test_dataset, batch_size=opt.batchSize, \
-                                     shuffle=False, num_workers=2)
+        test_dataset = bAbIDataset(opt.dataroot, opt.question_id, False)
+        test_dataloader = bAbIDataloader(test_dataset, batch_size=opt.batchSize, \
+                                         shuffle=False, num_workers=2)
 
-    opt.annotation_dim = 1  # for bAbI
-    opt.n_edge_types = train_dataset.n_edge_types
-    opt.n_node = train_dataset.n_node
+        opt.annotation_dim = 1  # for bAbI
+        opt.n_edge_types = train_dataset.n_edge_types
+        opt.n_node = train_dataset.n_node
 
-    net = GGNN(opt)
-    net.double()
-    print(net)
+        net = GGNN(opt)
+        net.double()
+        print(net)
 
-    criterion = nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss()
 
-    if opt.cuda:
-        net.cuda()
-        criterion.cuda()
+        if opt.cuda:
+            net.cuda()
+            criterion.cuda()
 
-    optimizer = optim.Adam(net.parameters(), lr=opt.lr)
+        optimizer = optim.Adam(net.parameters(), lr=opt.lr)
 
-    for epoch in range(0, opt.niter):
-        train(epoch, train_dataloader, net, criterion, optimizer, opt)
-        test(test_dataloader, net, criterion, optimizer, opt)
-
+        for epoch in range(0, opt.niter):
+            train(epoch, train_dataloader, net, criterion, optimizer, opt)
+            test(test_dataloader, net, criterion, optimizer, opt)
+    except Exception as e:
+        traceback.print_exc(file=open('/script/ggnn.pytorch9-buggy.txt','w+'))
 
 if __name__ == "__main__":
     main(opt)
